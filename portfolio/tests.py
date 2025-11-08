@@ -53,3 +53,53 @@ class AddInvestmentTests(TestCase):
         # field-level errors should contain our custom messages
         self.assertIn("Quantity must be > 0", form.errors["quantity"])
         self.assertIn("Purchase price must be > 0", form.errors["purchase_price"])
+
+class EditInvestmentTests(TestCase):
+    def setUp(self):
+        self.p = Portfolio.objects.create(name="Core")
+        self.inv = Investment.objects.create(
+            portfolio=self.p,
+            name="Apple",
+            ticker="AAPL",
+            type="stock",
+            quantity=Decimal("10"),
+            purchase_price=Decimal("100.00"),
+            purchase_date="2025-10-01",
+            current_value=Decimal("1100.00"),
+            notes="initial",
+        )
+
+    def test_edit_updates_fields_and_recomputes_amount_invested(self):
+        """
+        Editing an investment should:
+        - update quantity, purchase_price, current_value, notes
+        - re-normalize ticker to uppercase
+        - recompute amount_invested = quantity * purchase_price
+        - redirect after success
+        """
+        url = reverse("investment-edit", args=[self.inv.pk])
+
+        resp = self.client.post(url, {
+            "portfolio": self.p.id,
+            "name": "Apple Inc.",
+            "ticker": "aapl",
+            "type": "stock",
+            "quantity": "12",
+            "purchase_price": "120.00",
+            "purchase_date": "2025-10-02",
+            "current_value": "1500.00",
+            "notes": "updated",
+        })
+
+        # should redirect to portfolio detail
+        self.assertEqual(resp.status_code, 302)
+
+        self.inv.refresh_from_db()
+        self.assertEqual(self.inv.name, "Apple Inc.")
+        self.assertEqual(self.inv.ticker, "AAPL")
+        self.assertEqual(self.inv.quantity, Decimal("12"))
+        self.assertEqual(self.inv.purchase_price, Decimal("120.00"))
+        self.assertEqual(self.inv.amount_invested, Decimal("1440.00"))  # 12 * 120
+        self.assertEqual(self.inv.current_value, Decimal("1500.00"))
+        self.assertEqual(self.inv.notes, "updated")
+        self.assertEqual(self.inv.portfolio, self.p)
