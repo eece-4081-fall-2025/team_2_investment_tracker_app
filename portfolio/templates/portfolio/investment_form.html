@@ -1,0 +1,22 @@
+{% extends "portfolio/base.html" %}
+{% block content %}
+<h2>{% if object %}Edit Investment{% else %}New Investment{% endif %}</h2>
+
+<form method="post">
+  {% csrf_token %}
+
+  {{ form.non_field_errors }}
+
+  {% for field in form %}
+    <p>
+      {{ field.label_tag }}<br>
+      {{ field }}
+      {% for error in field.errors %}
+        <span style="color:red">{{ error }}</span>
+      {% endfor %}
+    </p>
+  {% endfor %}
+
+  <button type="submit">Save</button>
+</form>
+{% endblock %}
