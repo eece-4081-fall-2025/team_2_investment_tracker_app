@@ -1,0 +1,145 @@
+{% extends "portfolio/base.html" %}
+{% block content %}
+<h2>{% if object %}Edit Investment{% else %}New Investment{% endif %}</h2>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+
+  {% for field in form %}
+    <p>
+      {{ field.label_tag }}<br>
+      {{ field }}
+      {% if field.name == 'ticker' %}
+      <datalist id="ticker-options">
+        
+        {# We can't query here; we'll render via a helper block below #}
+      </datalist>
+      <small>Pick an existing ticker or type a new one.</small>
+      <div style="margin-top:6px"><strong>Current Price:</strong> <span id="current-price">—</span></div>
+      {% endif %}
+      {% for error in field.errors %}
+        <span style="color:red">{{ error }}</span>
+      {% endfor %}
+    </p>
+  {% endfor %}
+
+  <button type="submit">Save</button>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const tickerInput = document.getElementById('id_ticker');
+  const priceEl = document.getElementById('current-price');
+  const datalist = document.getElementById('ticker-options');
+
+  async function fetchPrice(t) {
+    if (!t) { priceEl.textContent = '—'; return; }
+    try {
+      const resp = await fetch(`/api/ticker-info/?ticker=${encodeURIComponent(t)}`);
+      const data = await resp.json();
+      priceEl.textContent = data.price !== null ? `$${data.price}` : 'n/a';
+    } catch (e) {
+      priceEl.textContent = 'n/a';
+    }
+  }
+
+  // Fetch suggestions of existing tickers (distinct). We'll use a lightweight endpoint as well.
+  async function populateTickers() {
+    try {
+      const resp = await fetch('/api/tickers/');
+      const data = await resp.json();
+      if (Array.isArray(data.tickers)) {
+        datalist.innerHTML = '';
+        data.tickers.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t;
+          datalist.appendChild(opt);
+        });
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  if (tickerInput) {
+    populateTickers();
+    tickerInput.addEventListener('change', () => fetchPrice(tickerInput.value.trim().toUpperCase()));
+    tickerInput.addEventListener('blur', () => fetchPrice(tickerInput.value.trim().toUpperCase()));
+    // initial
+    fetchPrice(tickerInput.value.trim().toUpperCase());
+  }
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const tickerInput = document.getElementById('id_ticker');
+  const priceEl = document.getElementById('current-price');
+  const datalist = document.getElementById('ticker-options');
+  const pp = document.getElementById('id_purchase_price');
+
+  async function fetchPrice(t) {
+    if (!t) { priceEl.textContent = '—'; return; }
+    try {
+      const resp = await fetch(`/api/ticker-info/?ticker=${encodeURIComponent(t)}`);
+      const data = await resp.json();
+      if (data.price !== null) {
+        priceEl.textContent = `$${data.price}`;
+        // optionally prefill purchase price only if empty/zero
+        if (pp && (!pp.value || pp.value === '0')) pp.value = data.price;
+      } else {
+        priceEl.textContent = (pp && pp.value) ? `$${pp.value}` : 'n/a';
+      }
+    } catch (e) {
+      priceEl.textContent = (pp && pp.value) ? `$${pp.value}` : 'n/a';
+    }
+  }
+
+  async function populateTickers() {
+    try {
+      const resp = await fetch('/api/tickers/');
+      const data = await resp.json();
+      if (Array.isArray(data.tickers)) {
+        datalist.innerHTML = '';
+        data.tickers.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t;
+          datalist.appendChild(opt);
+        });
+      }
+    } catch (e) { /* ignore */ }
+  }
+
+  function debounce(fn, delay) {
+    let id;
+    return (...args) => {
+      clearTimeout(id);
+      id = setTimeout(() => fn(...args), delay);
+    };
+  }
+
+  const debouncedFetch = debounce(() => {
+    const t = tickerInput.value.trim().toUpperCase();
+    fetchPrice(t);
+  }, 250);
+
+  if (tickerInput) {
+    populateTickers();
+    // Update immediately on load
+    debouncedFetch();
+    // Update as the user types (input), and also on change/blur
+    tickerInput.addEventListener('input', debouncedFetch);
+    tickerInput.addEventListener('change', debouncedFetch);
+    tickerInput.addEventListener('blur', debouncedFetch);
+  }
+
+  if (pp) {
+    pp.addEventListener('input', () => {
+      priceEl.textContent = pp.value ? `$${pp.value}` : 'n/a';
+    });
+  }
+});
+</script>
+
+{% endblock %}

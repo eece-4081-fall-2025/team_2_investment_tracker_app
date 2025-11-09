@@ -1,0 +1,44 @@
+{% extends "portfolio/base.html" %}
+{% block content %}
+<h2>{{ object.name }}</h2>
+<p>{{ object.description }}</p>
+
+<p>
+  Invested: ${{ object.total_invested }} |
+  Current: ${{ object.total_current_value }} |
+  Gain/Loss: ${{ object.total_gain_loss }}
+</p>
+
+<p><a href="{% url 'investment-create' %}">Add Investment</a></p>
+
+<table border="1" cellpadding="6">
+  <tr>
+    <th>Name</th>
+    <th>Type</th>
+    <th>Invested</th>
+    <th>Current</th>
+    <th>Gain/Loss</th>
+    <th>Actions</th>
+  </tr>
+  {% for inv in object.investments.all %}
+  <tr>
+    <td>{{ inv.name }}{% if inv.ticker %} ({{ inv.ticker }}){% endif %}</td>
+    <td>{{ inv.get_type_display }}</td>
+    <td>${{ inv.amount_invested }}</td>
+    <td>${{ inv.current_value }}</td>
+    <td>${{ inv.gain_loss }}</td>
+    <td>
+      <a href="{% url 'investment-edit' inv.pk %}">Edit</a> |
+      <a href="{% url 'investment-delete' inv.pk %}">Delete</a>
+    </td>
+  </tr>
+  {% empty %}
+  <tr><td colspan="6">No investments yet.</td></tr>
+  {% endfor %}
+</table>
+
+<p>
+  <a href="{% url 'portfolio-edit' object.pk %}">Edit Portfolio</a> |
+  <a href="{% url 'portfolio-delete' object.pk %}">Delete Portfolio</a>
+</p>
+{% endblock %}
