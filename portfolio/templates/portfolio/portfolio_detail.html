@@ -1,0 +1,142 @@
+{% extends "portfolio/base.html" %}
+{% block content %}
+<h2>{{ object.name }}</h2>
+<p>{{ object.description }}</p>
+
+<p>
+  Invested: ${{ object.total_invested_cash|floatformat:2 }} |
+  Current: <span id="portfolio-current">calculating…</span> |
+  Gain/Loss: <span id="portfolio-gain">calculating…</span>
+</p>
+
+
+<p><a href="{% url 'investment-create' %}">Add Investment</a></p>
+
+<table border="1" cellpadding="6">
+  <tr>
+    <th>Name</th>
+    <th>Type</th>
+    <th>Invested</th>
+    <th>Current Price (live)</th>
+    <th>Current Value (live)</th>
+    <th>Gain/Loss (live)</th>
+    <th>Actions</th>
+  </tr>
+
+{% for inv in object.investments.all %}
+<tr
+  class="inv-row"
+  data-ticker="{{ inv.ticker|upper }}"
+  data-qty="{{ inv.quantity }}"
+  data-invested="{{ inv.amount_invested }}"
+>
+  <td>{{ inv.name }}{% if inv.ticker %} ({{ inv.ticker }}){% endif %}</td>
+  <td>{{ inv.get_type_display }}</td>
+  <td>${{ inv.invested_cash|floatformat:2 }}</td>
+
+  <!-- live cells -->
+  <td><span class="live-price">n/a</span></td>
+  <td><span class="live-value">${{ inv.current_value }}</span></td>
+  <td><span class="live-gain">${{ inv.gain_loss }}</span></td>
+
+  <td>
+    <a href="{% url 'investment-edit' inv.pk %}">Edit</a> |
+    <a href="{% url 'investment-delete' inv.pk %}">Delete</a>
+    <a href="{% url 'transaction-create' inv.pk %}">Add Transaction</a>
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="7">No investments yet.</td></tr>
+{% endfor %}
+</table>
+
+<p>
+  <a href="{% url 'portfolio-edit' object.pk %}">Edit Portfolio</a> |
+  <a href="{% url 'portfolio-delete' object.pk %}">Delete Portfolio</a>
+</p>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const POLL_MS = 5000; // refresh interval (ms). Change if you like.
+
+  async function fetchPrice(ticker) {
+    if (!ticker) return null;
+    try {
+      const resp = await fetch(`/api/ticker-info/?ticker=${encodeURIComponent(ticker)}`);
+      const data = await resp.json();
+      return (data && data.price !== null) ? parseFloat(data.price) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function fmt(n) {
+    return `$${Number(n).toFixed(2)}`;
+  }
+
+  async function refreshRow(row) {
+    const ticker = (row.dataset.ticker || '').trim().toUpperCase();
+    const qty = parseFloat(row.dataset.qty || '0') || 0;
+    const invested = parseFloat(row.dataset.invested || '0') || 0;
+
+    const priceEl = row.querySelector('.live-price');
+    const valueEl = row.querySelector('.live-value');
+    const gainEl  = row.querySelector('.live-gain');
+
+    if (!ticker) {
+      if (priceEl) priceEl.textContent = 'n/a';
+      if (valueEl) valueEl.textContent = 'n/a';
+      if (gainEl)  gainEl.textContent  = 'n/a';
+      return { value: 0 };
+    }
+
+    const price = await fetchPrice(ticker);
+    if (priceEl) priceEl.textContent = (price != null) ? fmt(price) : 'n/a';
+
+    let value = null, gain = null;
+    if (price != null) {
+      value = price * qty;
+      gain  = value - invested;
+      if (valueEl) valueEl.textContent = fmt(value);
+      if (gainEl)  gainEl.textContent  = fmt(gain);
+    } else {
+      if (valueEl) valueEl.textContent = 'n/a';
+      if (gainEl)  gainEl.textContent  = 'n/a';
+    }
+
+    return { value: (value != null ? value : 0), gain: (gain != null ? gain : 0) };
+  }
+
+  async function refreshAll() {
+    const rows = Array.from(document.querySelectorAll('.inv-row'));
+    let totalValue = 0;
+    let totalInvested = 0;
+    let totalGain = 0;
+
+    for (const r of rows) {
+      const invested = parseFloat(r.dataset.invested || '0') || 0;
+      totalInvested += invested;
+      const { value, gain } = await refreshRow(r);
+      totalValue += value;
+      totalGain  += gain;
+    }
+
+    const portCurr = document.getElementById('portfolio-current');
+    const portGain = document.getElementById('portfolio-gain');
+    if (portCurr) portCurr.textContent = fmt(totalValue);
+    if (portGain) portGain.textContent = fmt(totalGain);
+  }
+
+  // First load
+  refreshAll();
+
+  // Polling loop (pause when tab not visible)
+  let timer = setInterval(() => {
+    if (document.visibilityState === 'visible') refreshAll();
+  }, POLL_MS);
+
+  window.addEventListener('beforeunload', () => clearInterval(timer));
+});
+</script>
+
+{% endblock %}

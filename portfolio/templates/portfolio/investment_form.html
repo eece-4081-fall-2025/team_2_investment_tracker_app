@@ -1,0 +1,151 @@
+{% extends "portfolio/base.html" %}
+{% block content %}
+<h2>{% if object %}Edit Investment{% else %}New Investment{% endif %}</h2>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+
+  {% for field in form %}
+    <p>
+      {{ field.label_tag }}<br>
+      {{ field }}
+      {% if field.name == 'ticker' %}
+      <datalist id="ticker-options">
+        
+        {# We can't query here; we'll render via a helper block below #}
+      </datalist>
+      <small>Type out the exact ticker.</small>
+      <div style="margin-top:6px"><strong>Current Price:</strong> <span id="current-price">—</span></div>
+      {% endif %}
+      {% for error in field.errors %}
+        <span style="color:red">{{ error }}</span>
+      {% endfor %}
+    </p>
+  {% endfor %}
+
+  <button type="submit">Save</button>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const tickerInput = document.getElementById('id_ticker');
+  const priceEl = document.getElementById('current-price');
+  const datalist = document.getElementById('ticker-options');
+
+  async function fetchPrice(t) {
+    if (!t) { priceEl.textContent = '—'; return; }
+    try {
+      const resp = await fetch(`/api/ticker-info/?ticker=${encodeURIComponent(t)}`);
+      const data = await resp.json();
+      priceEl.textContent = data.price !== null ? `$${data.price}` : 'n/a';
+    } catch (e) {
+      priceEl.textContent = 'n/a';
+    }
+  }
+
+  // Fetch suggestions of existing tickers (distinct). We'll use a lightweight endpoint as well.
+  async function populateTickers() {
+    try {
+      const resp = await fetch('/api/tickers/');
+      const data = await resp.json();
+      if (Array.isArray(data.tickers)) {
+        datalist.innerHTML = '';
+        data.tickers.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t;
+          datalist.appendChild(opt);
+        });
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  if (tickerInput) {
+    populateTickers();
+    tickerInput.addEventListener('change', () => fetchPrice(tickerInput.value.trim().toUpperCase()));
+    tickerInput.addEventListener('blur', () => fetchPrice(tickerInput.value.trim().toUpperCase()));
+    // initial
+    fetchPrice(tickerInput.value.trim().toUpperCase());
+  }
+});
+</script>
+
+<!-- New script updates the current price every 5 seconds and when you type -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const tickerInput = document.getElementById('id_ticker');
+  const priceEl = document.getElementById('current-price');
+  const datalist = document.getElementById('ticker-options'); // updates as you type
+
+  const POLL_MS = 5000; // updates every 5 seconds
+  let pollTimer = null;
+
+  async function fetchPrice(t) {
+    if (!t) { priceEl.textContent = '—'; return; }
+    try {
+      const resp = await fetch(`/api/ticker-info/?ticker=${encodeURIComponent(t)}`);
+      const data = await resp.json();
+      priceEl.textContent = (data && data.price !== null) ? `$${data.price}` : 'n/a';
+    } catch (e) {
+      priceEl.textContent = 'n/a';
+    }
+  }
+
+  async function populateTickers() {
+    try {
+      const resp = await fetch('/api/tickers/');
+      const data = await resp.json();
+      if (Array.isArray(data.tickers)) {
+        datalist.innerHTML = '';
+        data.tickers.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t;
+          datalist.appendChild(opt);
+        });
+      }
+    } catch (e) { /* ignore */ }
+  }
+
+  function currentTicker() {
+    return (tickerInput?.value || '').trim().toUpperCase();
+  }
+
+  function startPolling() {
+    stopPolling();
+    fetchPrice(currentTicker());
+    pollTimer = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchPrice(currentTicker());
+      }
+    }, POLL_MS);
+  }
+
+  function stopPolling() {
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') startPolling();
+    else stopPolling();
+  });
+
+  if (tickerInput) {
+    populateTickers();
+    const onChange = () => fetchPrice(currentTicker());
+    tickerInput.addEventListener('input', onChange);
+    tickerInput.addEventListener('change', onChange);
+    tickerInput.addEventListener('blur', onChange);
+    startPolling();
+  }
+
+  window.addEventListener('beforeunload', stopPolling);
+});
+</script>
+
+
+{% endblock %}

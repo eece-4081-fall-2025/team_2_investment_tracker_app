@@ -1,0 +1,19 @@
+{% extends "portfolio/base.html" %}
+{% block content %}
+<h2>Add Transaction – {{ investment.name }}{% if investment.ticker %} ({{ investment.ticker }}){% endif %}</h2>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  <table>
+    {% for field in form %}
+      <tr>
+        <th>{{ field.label_tag }}</th>
+        <td>{{ field }} {{ field.errors }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+  <button type="submit">Save</button>
+  <a href="{% url 'portfolio-detail' investment.portfolio_id %}">Cancel</a>
+</form>
+{% endblock %}
