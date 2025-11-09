@@ -16,39 +16,39 @@
   <tr>
     <th>Name</th>
     <th>Type</th>
+    <th>Shares</th>
     <th>Invested</th>
-    <th>Current Price (live)</th>
     <th>Current Value (live)</th>
     <th>Gain/Loss (live)</th>
     <th>Actions</th>
   </tr>
+  {% for inv in object.investments.all %}
+  <tr data-row-ticker="{{ inv.ticker|upper }}">
+    <td>{{ inv.name }}{% if inv.ticker %} ({{ inv.ticker }}){% endif %}</td>
+    <td>{{ inv.get_type_display }}</td>
+    <td>{{ inv.quantity|floatformat:4 }}</td>   {# shows up to 4 decimals; use :0 if you want whole shares #}
+    <td>${{ inv.invested_cash|floatformat:2 }}</td>
+    <td><span class="live-value">n/a</span></td>
+    <td><span class="live-gain">n/a</span></td>
+    <td>
+      <a href="{% url 'investment-edit' inv.pk %}">Edit</a> |
+      <a href="{% url 'investment-delete' inv.pk %}">Delete</a> |
+      <a href="{% url 'transaction-create' inv.pk %}">Add Transaction</a>
+    </td>
 
-{% for inv in object.investments.all %}
-<tr
-  class="inv-row"
-  data-ticker="{{ inv.ticker|upper }}"
-  data-qty="{{ inv.quantity }}"
-  data-invested="{{ inv.amount_invested }}"
->
-  <td>{{ inv.name }}{% if inv.ticker %} ({{ inv.ticker }}){% endif %}</td>
-  <td>{{ inv.get_type_display }}</td>
-  <td>${{ inv.invested_cash|floatformat:2 }}</td>
-
-  <!-- live cells -->
-  <td><span class="live-price">n/a</span></td>
-  <td><span class="live-value">${{ inv.current_value }}</span></td>
-  <td><span class="live-gain">${{ inv.gain_loss }}</span></td>
-
-  <td>
-    <a href="{% url 'investment-edit' inv.pk %}">Edit</a> |
-    <a href="{% url 'investment-delete' inv.pk %}">Delete</a>
-    <a href="{% url 'transaction-create' inv.pk %}">Add Transaction</a>
-  </td>
-</tr>
-{% empty %}
-<tr><td colspan="7">No investments yet.</td></tr>
-{% endfor %}
+    {# Hidden data used by the live updater #}
+    <td style="display:none"
+        class="live-data"
+        data-ticker="{{ inv.ticker|upper }}"
+        data-qty="{{ inv.quantity }}"
+        data-invested="{{ inv.invested_cash }}">
+    </td>
+  </tr>
+  {% empty %}
+  <tr><td colspan="7">No investments yet.</td></tr>
+  {% endfor %}
 </table>
+
 
 <p>
   <a href="{% url 'portfolio-edit' object.pk %}">Edit Portfolio</a> |
