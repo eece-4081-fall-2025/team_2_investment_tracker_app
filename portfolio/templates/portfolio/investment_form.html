@@ -72,25 +72,24 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
+<!-- New script updates the current price every 5 seconds and when you type -->
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   const tickerInput = document.getElementById('id_ticker');
   const priceEl = document.getElementById('current-price');
-  const datalist = document.getElementById('ticker-options');
-  const pp = document.getElementById('id_purchase_price');
+  const datalist = document.getElementById('ticker-options'); // updates as you type
+
+  const POLL_MS = 5000; // updates every 5 seconds
+  let pollTimer = null;
 
   async function fetchPrice(t) {
     if (!t) { priceEl.textContent = '—'; return; }
     try {
       const resp = await fetch(`/api/ticker-info/?ticker=${encodeURIComponent(t)}`);
       const data = await resp.json();
-      if (data.price !== null) {
-        priceEl.textContent = `$${data.price}`;
-      } else {
-        priceEl.textContent = (pp && pp.value) ? `$${pp.value}` : 'n/a';
-      }
+      priceEl.textContent = (data && data.price !== null) ? `$${data.price}` : 'n/a';
     } catch (e) {
-      priceEl.textContent = (pp && pp.value) ? `$${pp.value}` : 'n/a';
+      priceEl.textContent = 'n/a';
     }
   }
 
@@ -109,35 +108,44 @@ document.addEventListener('DOMContentLoaded', function () {
     } catch (e) { /* ignore */ }
   }
 
-  function debounce(fn, delay) {
-    let id;
-    return (...args) => {
-      clearTimeout(id);
-      id = setTimeout(() => fn(...args), delay);
-    };
+  function currentTicker() {
+    return (tickerInput?.value || '').trim().toUpperCase();
   }
 
-  const debouncedFetch = debounce(() => {
-    const t = tickerInput.value.trim().toUpperCase();
-    fetchPrice(t);
-  }, 250);
+  function startPolling() {
+    stopPolling();
+    fetchPrice(currentTicker());
+    pollTimer = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchPrice(currentTicker());
+      }
+    }, POLL_MS);
+  }
+
+  function stopPolling() {
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') startPolling();
+    else stopPolling();
+  });
 
   if (tickerInput) {
     populateTickers();
-    // Update immediately on load
-    debouncedFetch();
-    // Update as the user types (input), and also on change/blur
-    tickerInput.addEventListener('input', debouncedFetch);
-    tickerInput.addEventListener('change', debouncedFetch);
-    tickerInput.addEventListener('blur', debouncedFetch);
+    const onChange = () => fetchPrice(currentTicker());
+    tickerInput.addEventListener('input', onChange);
+    tickerInput.addEventListener('change', onChange);
+    tickerInput.addEventListener('blur', onChange);
+    startPolling();
   }
 
-  if (pp) {
-    pp.addEventListener('input', () => {
-      priceEl.textContent = pp.value ? `$${pp.value}` : 'n/a';
-    });
-  }
+  window.addEventListener('beforeunload', stopPolling);
 });
 </script>
+
 
 {% endblock %}

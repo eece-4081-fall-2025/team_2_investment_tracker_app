@@ -33,9 +33,9 @@ class InvestmentForm(forms.ModelForm):
             "purchase_date",
             "notes",
         ]
-        
+
         widgets = {
-            "purchase_date": forms.DateInput(attrs={"type": "date"}),
+            "purchase_date": forms.DateInput(attrs={"type": "date"}), # calendar widget
         }
 
     def clean(self):

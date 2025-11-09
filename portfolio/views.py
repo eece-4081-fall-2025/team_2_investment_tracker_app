@@ -13,6 +13,9 @@ class PortfolioListView(ListView):
     model = Portfolio
     template_name = "portfolio/portfolio_list.html"
 
+    def get_queryset(self): 
+        return super().get_queryset().prefetch_related('investments')  # makes p.investments.all more efficient by prefetching investments
+
 
 class PortfolioDetailView(DetailView):
     model = Portfolio
@@ -65,58 +68,7 @@ from .models import Portfolio, Investment
 from .forms import PortfolioForm, InvestmentForm
 
 
-# ---------- Portfolio views ----------
-class PortfolioListView(ListView):
-    model = Portfolio
-    template_name = "portfolio/portfolio_list.html"
-
-
-class PortfolioDetailView(DetailView):
-    model = Portfolio
-    template_name = "portfolio/portfolio_detail.html"
-
-
-class PortfolioCreateView(CreateView):
-    model = Portfolio
-    form_class = PortfolioForm
-    template_name = "portfolio/portfolio_form.html"
-
-
-class PortfolioUpdateView(UpdateView):
-    model = Portfolio
-    form_class = PortfolioForm
-    template_name = "portfolio/portfolio_form.html"
-
-
-class PortfolioDeleteView(DeleteView):
-    model = Portfolio
-    success_url = reverse_lazy("portfolio-list")
-    template_name = "portfolio/confirm_delete.html"
-
-
-# ---------- Investment views ----------
-class InvestmentCreateView(CreateView):
-    model = Investment
-    form_class = InvestmentForm
-    template_name = "portfolio/investment_form.html"
-
-
-class InvestmentUpdateView(UpdateView):
-    model = Investment
-    form_class = InvestmentForm
-    template_name = "portfolio/investment_form.html"
-
-
-class InvestmentDeleteView(DeleteView):
-    model = Investment
-    template_name = "portfolio/confirm_delete.html"
-
-    def get_success_url(self):
-        return reverse_lazy("portfolio-detail", args=[self.object.portfolio_id])
-
-
-# ---------- Lightweight API ----------
-
+# ---------- API ----------
 def ticker_info(request):
     """
     Return JSON with a live price for the given ticker.
@@ -168,23 +120,6 @@ def ticker_info(request):
         pass
 
     return JsonResponse(data)
-
-    try:
-        # Get the most recently created/dated investment with that ticker and use its purchase_price as proxy for current price.
-        qs = Investment.objects.filter(ticker=ticker).order_by("-purchase_date", "-created_at")
-        obj = qs.first()
-        if obj and getattr(obj, "purchase_price", None) is not None:
-            data["price"] = str(obj.purchase_price)
-        elif obj and getattr(obj, "current_value", None) is not None and getattr(obj, "quantity", None):
-            # Derive a unit price from current_value / quantity as a fallback
-            qty = obj.quantity or 0
-            if qty:
-                data["price"] = str(obj.current_value / qty)
-    except Exception:
-        # keep default
-        pass
-    return JsonResponse(data)
-
 
 def list_tickers(request):
     """Return a JSON array of distinct tickers already in the system."""
