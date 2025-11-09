@@ -15,7 +15,7 @@
         
         {# We can't query here; we'll render via a helper block below #}
       </datalist>
-      <small>Pick an existing ticker or type a new one.</small>
+      <small>Type out the exact ticker.</small>
       <div style="margin-top:6px"><strong>Current Price:</strong> <span id="current-price">—</span></div>
       {% endif %}
       {% for error in field.errors %}
@@ -86,8 +86,6 @@ document.addEventListener('DOMContentLoaded', function () {
       const data = await resp.json();
       if (data.price !== null) {
         priceEl.textContent = `$${data.price}`;
-        // optionally prefill purchase price only if empty/zero
-        if (pp && (!pp.value || pp.value === '0')) pp.value = data.price;
       } else {
         priceEl.textContent = (pp && pp.value) ? `$${pp.value}` : 'n/a';
       }

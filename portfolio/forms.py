@@ -31,9 +31,12 @@ class InvestmentForm(forms.ModelForm):
             "quantity",
             "purchase_price",
             "purchase_date",
-            "current_value",
             "notes",
         ]
+        
+        widgets = {
+            "purchase_date": forms.DateInput(attrs={"type": "date"}),
+        }
 
     def clean(self):
         cleaned = super().clean()
