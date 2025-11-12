@@ -9,7 +9,6 @@
   Gain/Loss: <span id="portfolio-gain">calculating…</span>
 </p>
 
-
 <p><a href="{% url 'investment-create' %}">Add Investment</a></p>
 
 <table border="1" cellpadding="6">
@@ -23,10 +22,13 @@
     <th>Actions</th>
   </tr>
   {% for inv in object.investments.all %}
-  <tr data-row-ticker="{{ inv.ticker|upper }}">
+  <tr class="inv-row"
+      data-ticker="{{ inv.ticker|upper }}"
+      data-qty="{{ inv.quantity }}"
+      data-invested="{{ inv.invested_cash }}">
     <td>{{ inv.name }}{% if inv.ticker %} ({{ inv.ticker }}){% endif %}</td>
     <td>{{ inv.get_type_display }}</td>
-    <td>{{ inv.quantity|floatformat:4 }}</td>   {# shows up to 4 decimals; use :0 if you want whole shares #}
+    <td>{{ inv.quantity|floatformat:4 }}</td>
     <td>${{ inv.invested_cash|floatformat:2 }}</td>
     <td><span class="live-value">n/a</span></td>
     <td><span class="live-gain">n/a</span></td>
@@ -35,20 +37,11 @@
       <a href="{% url 'investment-delete' inv.pk %}">Delete</a> |
       <a href="{% url 'transaction-create' inv.pk %}">Add Transaction</a>
     </td>
-
-    {# Hidden data used by the live updater #}
-    <td style="display:none"
-        class="live-data"
-        data-ticker="{{ inv.ticker|upper }}"
-        data-qty="{{ inv.quantity }}"
-        data-invested="{{ inv.invested_cash }}">
-    </td>
   </tr>
   {% empty %}
   <tr><td colspan="7">No investments yet.</td></tr>
   {% endfor %}
 </table>
-
 
 <p>
   <a href="{% url 'portfolio-edit' object.pk %}">Edit Portfolio</a> |
@@ -57,7 +50,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  const POLL_MS = 5000; // refresh interval (ms). Change if you like.
+  const POLL_MS = 5000; // refresh interval (ms)
 
   async function fetchPrice(ticker) {
     if (!ticker) return null;
@@ -74,65 +67,75 @@ document.addEventListener('DOMContentLoaded', function () {
     return `$${Number(n).toFixed(2)}`;
   }
 
+  function fmtSigned(n) {
+    const sign = n > 0 ? '+' : '';
+    return `${sign}${fmt(n)}`;
+  }
+
   async function refreshRow(row) {
-    const ticker = (row.dataset.ticker || '').trim().toUpperCase();
-    const qty = parseFloat(row.dataset.qty || '0') || 0;
+    const ticker   = (row.dataset.ticker || '').trim().toUpperCase();
+    const qty      = parseFloat(row.dataset.qty || '0') || 0;
     const invested = parseFloat(row.dataset.invested || '0') || 0;
 
-    const priceEl = row.querySelector('.live-price');
     const valueEl = row.querySelector('.live-value');
     const gainEl  = row.querySelector('.live-gain');
 
-    if (!ticker) {
-      if (priceEl) priceEl.textContent = 'n/a';
+    if (!ticker || qty === 0) {
       if (valueEl) valueEl.textContent = 'n/a';
       if (gainEl)  gainEl.textContent  = 'n/a';
-      return { value: 0 };
+      return { value: 0, gain: 0 };
     }
 
     const price = await fetchPrice(ticker);
-    if (priceEl) priceEl.textContent = (price != null) ? fmt(price) : 'n/a';
-
-    let value = null, gain = null;
-    if (price != null) {
-      value = price * qty;
-      gain  = value - invested;
-      if (valueEl) valueEl.textContent = fmt(value);
-      if (gainEl)  gainEl.textContent  = fmt(gain);
-    } else {
+    if (price == null) {
       if (valueEl) valueEl.textContent = 'n/a';
       if (gainEl)  gainEl.textContent  = 'n/a';
+      return { value: 0, gain: 0 };
     }
 
-    return { value: (value != null ? value : 0), gain: (gain != null ? gain : 0) };
+    const value = price * qty;
+    const gain  = value - invested;
+
+    if (valueEl) valueEl.textContent = fmt(value);
+    if (gainEl) {
+      gainEl.textContent = fmtSigned(gain);
+      gainEl.style.color = gain > 0 ? 'green' : (gain < 0 ? 'red' : 'inherit');
+    }
+
+    return { value, gain };
   }
 
   async function refreshAll() {
     const rows = Array.from(document.querySelectorAll('.inv-row'));
-    let totalValue = 0;
+    let totalValue    = 0;
     let totalInvested = 0;
-    let totalGain = 0;
 
     for (const r of rows) {
       const invested = parseFloat(r.dataset.invested || '0') || 0;
       totalInvested += invested;
-      const { value, gain } = await refreshRow(r);
+      const { value } = await refreshRow(r);
       totalValue += value;
-      totalGain  += gain;
     }
 
     const portCurr = document.getElementById('portfolio-current');
     const portGain = document.getElementById('portfolio-gain');
+    const totalGain = totalValue - totalInvested;
+
     if (portCurr) portCurr.textContent = fmt(totalValue);
-    if (portGain) portGain.textContent = fmt(totalGain);
+    if (portGain) {
+      portGain.textContent = fmtSigned(totalGain);
+      portGain.style.color = totalGain > 0 ? 'green' : (totalGain < 0 ? 'red' : 'inherit');
+    }
   }
 
   // First load
   refreshAll();
 
-  // Polling loop (pause when tab not visible)
+  // Polling loop (only when tab is visible)
   let timer = setInterval(() => {
-    if (document.visibilityState === 'visible') refreshAll();
+    if (document.visibilityState === 'visible') {
+      refreshAll();
+    }
   }, POLL_MS);
 
   window.addEventListener('beforeunload', () => clearInterval(timer));
