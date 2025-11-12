@@ -22,3 +22,13 @@ python -m venv .venv
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
+```
+## Run Tests
+```bash
+(All Tests Simultaneously)
+python manage.py test portfolio.tests
+(Epic 1 Tests)
+python manage.py test portfolio.tests.test_1_epic_1
+(Epic 2 Tests)
+python manage.py test portfolio.tests.test_2_epic_2
+```
