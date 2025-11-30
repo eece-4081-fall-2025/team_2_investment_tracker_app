@@ -4,12 +4,21 @@ from django.core.exceptions import ValidationError
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from decimal import Decimal, ROUND_HALF_UP
+from django.conf import settings
+
+
 
 
 # =======================
 # Portfolio Model
 # =======================
 class Portfolio(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="portfolios",
+        null=True, blank=True,
+    )
     name = models.CharField(max_length=120)
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

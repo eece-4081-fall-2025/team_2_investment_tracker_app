@@ -5,46 +5,61 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.urls import reverse_lazy, reverse
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.forms import UserCreationForm
 
 from .models import Portfolio, Investment, Transaction
 from .forms import PortfolioForm, InvestmentForm, TransactionForm
 
 
 # ---------- Portfolio views ----------
-class PortfolioListView(ListView):
+class PortfolioListView(LoginRequiredMixin, ListView):
     model = Portfolio
     template_name = "portfolio/portfolio_list.html"
 
     # Prefetch investments so templates can loop p.investments without extra queries
     def get_queryset(self):
-        return super().get_queryset().prefetch_related("investments")
+        return Portfolio.objects.filter(user=self.request.user).prefetch_related("investments")
 
 
-class PortfolioDetailView(DetailView):
+class PortfolioDetailView(LoginRequiredMixin, DetailView):
     model = Portfolio
     template_name = "portfolio/portfolio_detail.html"
 
+    def get_queryset(self):
+        return Portfolio.objects.filter(user=self.request.user).prefetch_related("investments")
 
-class PortfolioCreateView(CreateView):
+
+class PortfolioCreateView(LoginRequiredMixin, CreateView):
     model = Portfolio
     form_class = PortfolioForm
     template_name = "portfolio/portfolio_form.html"
 
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        return super().form_valid(form)
 
-class PortfolioUpdateView(UpdateView):
+
+class PortfolioUpdateView(LoginRequiredMixin, UpdateView):
     model = Portfolio
     form_class = PortfolioForm
     template_name = "portfolio/portfolio_form.html"
 
+    def get_queryset(self):
+        return Portfolio.objects.filter(user=self.request.user)
 
-class PortfolioDeleteView(DeleteView):
+
+class PortfolioDeleteView(LoginRequiredMixin,DeleteView):
     model = Portfolio
     success_url = reverse_lazy("portfolio-list")
     template_name = "portfolio/confirm_delete.html"
 
+    def get_queryset(self):
+        return Portfolio.objects.filter(user=self.request.user)
+
 
 # ---------- Investment views ----------
-class InvestmentCreateView(CreateView):
+class InvestmentCreateView(LoginRequiredMixin, CreateView):
     model = Investment
     form_class = InvestmentForm
     template_name = "portfolio/investment_form.html"
@@ -80,7 +95,7 @@ class InvestmentCreateView(CreateView):
         return response
 
 
-class InvestmentUpdateView(UpdateView):
+class InvestmentUpdateView(LoginRequiredMixin, UpdateView):
     model = Investment
     form_class = InvestmentForm
     template_name = "portfolio/investment_form.html"
@@ -101,7 +116,7 @@ class InvestmentUpdateView(UpdateView):
         return response
 
 
-class InvestmentDeleteView(DeleteView):
+class InvestmentDeleteView(LoginRequiredMixin, DeleteView):
     model = Investment
     template_name = "portfolio/confirm_delete.html"
 
@@ -201,3 +216,9 @@ class TransactionCreateView(CreateView):
         ctx = super().get_context_data(**kwargs)
         ctx["investment"] = self.investment
         return ctx
+
+# ---------- AUTH Views ----------
+class SignUpView(CreateView):
+    form_class = UserCreationForm
+    template_name = "registration/signup.html"
+    success_url = reverse_lazy("login")
