@@ -32,34 +32,31 @@
             animation: fadeIn 0.7s ease;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
         h2 {
             text-align: center;
             margin-bottom: 25px;
+            font-size: 26px;
             font-weight: 600;
         }
 
         .input-group {
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
 
         .input-group label {
             display: block;
-            margin-bottom: 5px;
             font-size: 14px;
-            opacity: 0.9;
+            margin-bottom: 6px;
         }
 
         .input-group input {
             width: 100%;
-            padding: 12px;
-            border: none;
+            padding: 10px 12px;
             border-radius: 8px;
+            border: none;
             outline: none;
+            font-size: 15px;
+            background: rgba(255, 255, 255, 0.9);
         }
 
         .login-btn {
@@ -91,6 +88,14 @@
             text-decoration: underline;
             cursor: pointer;
         }
+
+        .errors {
+            background: rgba(255, 0, 0, 0.15);
+            border-radius: 6px;
+            padding: 8px 10px;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
     </style>
 </head>
 <body>
@@ -98,22 +103,44 @@
     <div class="login-container">
         <h2>Welcome Back</h2>
 
-        <form>
+        <form method="post" action="{% url 'login' %}">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="errors">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
             <div class="input-group">
-                <label>Email</label>
-                <input type="email" required />
+                <label for="id_username">Username</label>
+                <input
+                    type="text"
+                    name="username"
+                    id="id_username"
+                    required
+                    value="{{ form.username.value|default_if_none:'' }}"
+                />
+                {{ form.username.errors }}
             </div>
 
             <div class="input-group">
-                <label>Password</label>
-                <input type="password" required />
+                <label for="id_password">Password</label>
+                <input
+                    type="password"
+                    name="password"
+                    id="id_password"
+                    required
+                />
+                {{ form.password.errors }}
             </div>
 
             <button class="login-btn" type="submit">Log In</button>
 
             <div class="links">
-                <p><a href="#">Forgot password?</a></p>
-                <p>Don't have an account? <a href="signup.html">Sign up</a></p>
+                <!-- optional; works if you keep auth password reset URLs -->
+                <!-- <p><a href="{% url 'password_reset' %}">Forgot password?</a></p> -->
+                <p>Don't have an account? <a href="{% url 'signup' %}">Sign up</a></p>
             </div>
         </form>
     </div>

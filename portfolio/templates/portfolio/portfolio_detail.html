@@ -9,7 +9,10 @@
   Gain/Loss: <span id="portfolio-gain">calculating…</span>
 </p>
 
-<p><a href="{% url 'investment-create' %}">Add Investment</a></p>
+<p>
+  <a href="{% url 'portfolio-list' %}">Back to all portfolios</a> |
+  <a href="{% url 'investment-create' %}?portfolio={{ object.pk }}">Add Investment</a>
+</p>
 
 <table border="1" cellpadding="6">
   <tr>
@@ -39,7 +42,9 @@
     </td>
   </tr>
   {% empty %}
-  <tr><td colspan="7">No investments yet.</td></tr>
+  <tr>
+    <td colspan="7">No investments yet.</td>
+  </tr>
   {% endfor %}
 </table>
 
@@ -50,18 +55,11 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  const POLL_MS = 5000; // refresh interval (ms)
+  const POLL_MS = 5000; // refresh every 5s
 
-  async function fetchPrice(ticker) {
-    if (!ticker) return null;
-    try {
-      const resp = await fetch(`/api/ticker-info/?ticker=${encodeURIComponent(ticker)}`);
-      const data = await resp.json();
-      return (data && data.price !== null) ? parseFloat(data.price) : null;
-    } catch {
-      return null;
-    }
-  }
+  const rows = Array.from(document.querySelectorAll('.inv-row'));
+  const portfolioCurrentEl = document.getElementById('portfolio-current');
+  const portfolioGainEl = document.getElementById('portfolio-gain');
 
   function fmt(n) {
     return `$${Number(n).toFixed(2)}`;
@@ -72,6 +70,20 @@ document.addEventListener('DOMContentLoaded', function () {
     return `${sign}${fmt(n)}`;
   }
 
+  async function fetchPrice(ticker) {
+    if (!ticker) return null;
+    try {
+      const resp = await fetch(`/api/ticker-info/?ticker=${encodeURIComponent(ticker)}`);
+      const data = await resp.json();
+      if (data && data.price !== null) {
+        return parseFloat(data.price);
+      }
+    } catch (e) {
+      console.error('Error fetching price for', ticker, e);
+    }
+    return null;
+  }
+
   async function refreshRow(row) {
     const ticker   = (row.dataset.ticker || '').trim().toUpperCase();
     const qty      = parseFloat(row.dataset.qty || '0') || 0;
@@ -80,58 +92,49 @@ document.addEventListener('DOMContentLoaded', function () {
     const valueEl = row.querySelector('.live-value');
     const gainEl  = row.querySelector('.live-gain');
 
-    if (!ticker || qty === 0) {
-      if (valueEl) valueEl.textContent = 'n/a';
-      if (gainEl)  gainEl.textContent  = 'n/a';
-      return { value: 0, gain: 0 };
+    if (!ticker || qty <= 0) {
+      valueEl.textContent = 'n/a';
+      gainEl.textContent = 'n/a';
+      return 0;
     }
 
     const price = await fetchPrice(ticker);
-    if (price == null) {
-      if (valueEl) valueEl.textContent = 'n/a';
-      if (gainEl)  gainEl.textContent  = 'n/a';
-      return { value: 0, gain: 0 };
+    if (price === null) {
+      valueEl.textContent = 'n/a';
+      gainEl.textContent = 'n/a';
+      return 0;
     }
 
-    const value = price * qty;
-    const gain  = value - invested;
+    const currentValue = price * qty;
+    const gain = currentValue - invested;
 
-    if (valueEl) valueEl.textContent = fmt(value);
-    if (gainEl) {
-      gainEl.textContent = fmtSigned(gain);
-      gainEl.style.color = gain > 0 ? 'green' : (gain < 0 ? 'red' : 'inherit');
-    }
+    valueEl.textContent = fmt(currentValue);
+    gainEl.textContent = fmtSigned(gain);
 
-    return { value, gain };
+    return currentValue;
   }
 
   async function refreshAll() {
-    const rows = Array.from(document.querySelectorAll('.inv-row'));
-    let totalValue    = 0;
     let totalInvested = 0;
+    let totalCurrent  = 0;
 
-    for (const r of rows) {
-      const invested = parseFloat(r.dataset.invested || '0') || 0;
+    for (const row of rows) {
+      const invested = parseFloat(row.dataset.invested || '0') || 0;
       totalInvested += invested;
-      const { value } = await refreshRow(r);
-      totalValue += value;
+      const current = await refreshRow(row);
+      totalCurrent += current;
     }
 
-    const portCurr = document.getElementById('portfolio-current');
-    const portGain = document.getElementById('portfolio-gain');
-    const totalGain = totalValue - totalInvested;
+    const gain = totalCurrent - totalInvested;
 
-    if (portCurr) portCurr.textContent = fmt(totalValue);
-    if (portGain) {
-      portGain.textContent = fmtSigned(totalGain);
-      portGain.style.color = totalGain > 0 ? 'green' : (totalGain < 0 ? 'red' : 'inherit');
-    }
+    portfolioCurrentEl.textContent = fmt(totalCurrent);
+    portfolioGainEl.textContent = fmtSigned(gain);
   }
 
-  // First load
+  // initial load
   refreshAll();
 
-  // Polling loop (only when tab is visible)
+  // polling (only when tab is visible)
   let timer = setInterval(() => {
     if (document.visibilityState === 'visible') {
       refreshAll();
