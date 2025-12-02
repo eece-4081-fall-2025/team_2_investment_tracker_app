@@ -1,12 +1,21 @@
-{% extends "portfolio/base.html" %} 
-{% block content %} 
-<h2>Login</h2> 
-<form method="post"> 
-    {% csrf_token %} 
-    {{ form.as_p }} 
-    <button type="submit">Login</button> 
-</form> 
+{% extends "portfolio/base.html" %}
+{% block content %}
 
-<p>Don’t have an account? 
-    <a href="{% url 'signup' %}">Sign up</a></p> 
+<div class="auth-container">
+    <div class="auth-card">
+        <h2 class="auth-title">Welcome Back</h2>
+
+        <form method="post" class="auth-form">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn-submit">Login</button>
+        </form>
+
+        <p class="auth-footer">
+            Don’t have an account?
+            <a href="{% url 'signup' %}" class="link">Sign up</a>
+        </p>
+    </div>
+</div>
+
 {% endblock %}
