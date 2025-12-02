@@ -1,11 +1,125 @@
-{% extends "portfolio/base.html" %}
-{% block content %}
-<h2>Sign up</h2>
-<form method="post">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <button type="submit">Create account</button>
-</form>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign Up</title>
 
-<p>Already have an account? <a href="{% url 'login' %}">Login</a></p>
-{% endblock %}
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Segoe UI", Arial, sans-serif;
+        }
+
+        body {
+            height: 100vh;
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .signup-container {
+            width: 380px;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            color: #fff;
+            animation: fadeIn 0.7s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 25px;
+            font-weight: 600;
+        }
+
+        .input-group {
+            margin-bottom: 18px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        .signup-btn {
+            width: 100%;
+            padding: 12px;
+            background: #fff;
+            color: #333;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 5px;
+            transition: 0.3s;
+        }
+
+        .signup-btn:hover {
+            background: #e6e6e6;
+        }
+
+        .links {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .links a {
+            color: white;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="signup-container">
+        <h2>Create an Account</h2>
+
+        <form>
+            <div class="input-group">
+                <label>Full Name</label>
+                <input type="text" required />
+            </div>
+
+            <div class="input-group">
+                <label>Email</label>
+                <input type="email" required />
+            </div>
+
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" required />
+            </div>
+
+            <div class="input-group">
+                <label>Confirm Password</label>
+                <input type="password" required />
+            </div>
+
+            <button class="signup-btn" type="submit">Sign Up</button>
+
+            <div class="links">
+                <p
