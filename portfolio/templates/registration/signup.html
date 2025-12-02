@@ -3,108 +3,136 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sign Up</title>
+    <title>Investment Tracker – Sign Up</title>
 
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: "Segoe UI", Arial, sans-serif;
+            font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
         body {
-            height: 100vh;
-            background: linear-gradient(135deg, #6a11cb, #2575fc);
+            min-height: 100vh;
+            background: radial-gradient(circle at 0% 0%, #1f2937 0, #020617 55%, #020617 100%);
             display: flex;
             justify-content: center;
             align-items: center;
+            padding: 24px 12px;
+            color: #e5e7eb;
         }
 
-        .signup-container {
-            width: 380px;
-            padding: 40px;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(12px);
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            color: #fff;
-            animation: fadeIn 0.7s ease;
+        .auth-shell {
+            width: 100%;
+            max-width: 440px;
         }
 
-        h2 {
-            text-align: center;
-            margin-bottom: 25px;
-            font-size: 26px;
+        .auth-card {
+            background: rgba(15, 23, 42, 0.96);
+            border-radius: 2px; /* sharp lines */
+            box-shadow:
+                0 18px 40px rgba(0, 0, 0, 0.65),
+                0 0 0 1px rgba(148, 163, 184, 0.4);
+            padding: 26px 30px 30px;
+        }
+
+        .auth-title {
+            font-size: 22px;
             font-weight: 600;
+            margin-bottom: 6px;
+            color: #f9fafb;
+        }
+
+        .auth-subtitle {
+            font-size: 13px;
+            color: #9ca3af;
+            margin-bottom: 18px;
         }
 
         .input-group {
-            margin-bottom: 16px;
+            margin-bottom: 14px;
         }
 
         .input-group label {
             display: block;
-            font-size: 14px;
-            margin-bottom: 6px;
+            font-size: 13px;
+            margin-bottom: 4px;
+            color: #d1d5db;
         }
 
         .input-group input {
             width: 100%;
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: none;
+            padding: 9px 10px;
+            border-radius: 2px;
+            border: 1px solid #4b5563;
+            background: #020617;
+            color: #e5e7eb;
+            font-size: 14px;
             outline: none;
-            font-size: 15px;
-            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .input-group input:focus {
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.8);
         }
 
         .signup-btn {
             width: 100%;
-            padding: 12px;
-            background: #fff;
-            color: #333;
+            padding: 10px;
+            background: #2563eb;
+            color: #f9fafb;
             border: none;
-            border-radius: 8px;
-            font-size: 16px;
+            border-radius: 2px;
+            font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
-            margin-top: 5px;
-            transition: 0.3s;
+            margin-top: 6px;
+            transition: background 0.18s ease;
         }
 
         .signup-btn:hover {
-            background: #e6e6e6;
+            background: #1d4ed8;
         }
 
         .links {
             text-align: center;
-            margin-top: 15px;
-            font-size: 14px;
-            opacity: 0.9;
+            margin-top: 14px;
+            font-size: 13px;
+            color: #9ca3af;
         }
 
         .links a {
-            color: white;
+            color: #93c5fd;
+            text-decoration: none;
+        }
+
+        .links a:hover {
             text-decoration: underline;
-            cursor: pointer;
         }
 
         .errors {
-            background: rgba(255, 0, 0, 0.15);
-            border-radius: 6px;
+            background: rgba(248, 113, 113, 0.1);
+            border: 1px solid rgba(248, 113, 113, 0.6);
+            border-radius: 2px;
             padding: 8px 10px;
             margin-bottom: 10px;
             font-size: 13px;
+            color: #fecaca;
+        }
+
+        .field-error {
+            font-size: 12px;
+            color: #fecaca;
+            margin-top: 2px;
         }
     </style>
 </head>
 <body>
-
-    <div class="signup-container">
-        <h2>Create Account</h2>
-
-        <form method="post" action="{% url 'signup' %}">
-            {% csrf_token %}
+    <div class="auth-shell">
+        <div class="auth-card">
+            <div class="auth-title">Create account</div>
+            <div class="auth-subtitle">Sign up to start tracking your investments</div>
 
             {% if form.non_field_errors %}
                 <div class="errors">
@@ -112,47 +140,58 @@
                 </div>
             {% endif %}
 
-            <div class="input-group">
-                <label for="id_username">Username</label>
-                <input
-                    type="text"
-                    name="username"
-                    id="id_username"
-                    required
-                    value="{{ form.username.value|default_if_none:'' }}"
-                />
-                {{ form.username.errors }}
-            </div>
+            <form method="post" action="{% url 'signup' %}">
+                {% csrf_token %}
 
-            <div class="input-group">
-                <label for="id_password1">Password</label>
-                <input
-                    type="password"
-                    name="password1"
-                    id="id_password1"
-                    required
-                />
-                {{ form.password1.errors }}
-            </div>
+                <div class="input-group">
+                    <label for="id_username">Username</label>
+                    <input
+                        type="text"
+                        name="username"
+                        id="id_username"
+                        required
+                        value="{{ form.username.value|default_if_none:'' }}"
+                    />
+                    {% if form.username.errors %}
+                        <div class="field-error">{{ form.username.errors|striptags }}</div>
+                    {% endif %}
+                </div>
 
-            <div class="input-group">
-                <label for="id_password2">Confirm Password</label>
-                <input
-                    type="password"
-                    name="password2"
-                    id="id_password2"
-                    required
-                />
-                {{ form.password2.errors }}
-            </div>
+                <div class="input-group">
+                    <label for="id_password1">Password</label>
+                    <input
+                        type="password"
+                        name="password1"
+                        id="id_password1"
+                        required
+                    />
+                    {% if form.password1.errors %}
+                        <div class="field-error">{{ form.password1.errors|striptags }}</div>
+                    {% endif %}
+                </div>
 
-            <button class="signup-btn" type="submit">Sign Up</button>
+                <div class="input-group">
+                    <label for="id_password2">Confirm Password</label>
+                    <input
+                        type="password"
+                        name="password2"
+                        id="id_password2"
+                        required
+                    />
+                    {% if form.password2.errors %}
+                        <div class="field-error">{{ form.password2.errors|striptags }}</div>
+                    {% endif %}
+                </div>
 
-            <div class="links">
-                <p>Already have an account? <a href="{% url 'login' %}">Log in</a></p>
-            </div>
-        </form>
+                <button class="signup-btn" type="submit">Sign Up</button>
+
+                <div class="links">
+                    <p>Already have an account?
+                        <a href="{% url 'login' %}">Log in</a>
+                    </p>
+                </div>
+            </form>
+        </div>
     </div>
-
 </body>
 </html>

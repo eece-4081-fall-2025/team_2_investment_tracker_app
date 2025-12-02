@@ -1,38 +1,195 @@
-<!doctype html>
-<p>
-  <a href="{% url 'portfolio-list' %}">Portfolios</a> |
-  <a href="{% url 'portfolio-create' %}">New Portfolio</a> |
-  <a href="{% url 'investment-create' %}">New Investment</a> |
-  {% if user.is_authenticated %}
-  Logged in as {{ user.username }} –
-  <form action="{% url 'logout' %}" method="post" style="display:inline;">
-    {% csrf_token %}
-    <button type="submit" style="border:none;background:none;color:blue;text-decoration:underline;cursor:pointer;padding:0;">
-      Logout
-    </button>
-  </form>
-{% else %}
-  <a href="{% url 'login' %}">Login</a> |
-  <a href="{% url 'signup' %}">Sign up</a>
-{% endif %}
-
-</p>
-<hr>
-
-
-<html>
-  <head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
     <meta charset="utf-8">
-    <title>Investment Tracker</title>
-  </head>
-  <body>
-    <h1><a href="/">Investment Tracker</a></h1>
-    <nav>
-      <a href="/">Portfolios</a> |
-      <a href="/portfolio/new/">New Portfolio</a> |
-      <a href="/investment/new/">New Investment</a>
-    </nav>
-    <hr>
-    {% block content %}{% endblock %}
-  </body>
+    <title>{% block title %}Investment Tracker{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            position: relative; /* trying to center the page and get rid of the stupid stupypal extension!!! */
+            overflow-x: hidden;  
+            min-height: 100vh;
+            background: radial-gradient(circle at 0% 0%, #1f2937 0, #020617 55%, #020617 100%);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 32px 16px;
+            color: #e5e7eb;
+        }
+
+        .app-shell {
+            margin-left: auto;  
+            margin-right: auto;
+            position: relative; 
+            z-index: 1; /* see line 17 */
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        .app-header {
+            margin-bottom: 18px;
+        }
+
+        .top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 8px;
+        }
+
+        .brand {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            color: #f9fafb;
+        }
+
+        .user-nav {
+            font-size: 14px;
+            color: #cbd5f5;
+            white-space: nowrap;
+        }
+
+        .user-nav a {
+            color: #e5e7eb;
+            text-decoration: none;
+        }
+
+        .user-nav a:hover {
+            text-decoration: underline;
+        }
+
+        .logout-form {
+            display: inline;
+        }
+
+        .logout-button {
+            border: none;
+            background: none;
+            color: #e5e7eb;
+            text-decoration: underline;
+            cursor: pointer;
+            padding: 0;
+            font: inherit;
+        }
+
+        .main-nav {
+            font-size: 14px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .main-nav a {
+            color: #cbd5f5;
+            text-decoration: none;
+        }
+
+        .main-nav a:hover {
+            color: #f9fafb;
+            text-decoration: underline;
+        }
+
+        .main-card {
+            background: rgba(15, 23, 42, 0.94);
+            border-radius: 2px;
+            box-shadow:
+                0 18px 40px rgba(0, 0, 0, 0.55),
+                0 0 0 1px rgba(148, 163, 184, 0.18);
+            padding: 22px 26px 26px;
+            margin-top: 18px;
+            max-width: 1000px;
+            margin-left: auto;
+            margin-right: auto; /* centers the card */
+        }
+
+        .main-card h1,
+        .main-card h2,
+        .main-card h3 {
+            color: #f9fafb;
+            margin-bottom: 10px;
+        }
+
+        .main-card p {
+            margin-bottom: 8px;
+        }
+
+        /* Unstyled lists: removes bullet before "No portfolios yet." */
+        .main-card ul {
+            list-style: none;
+            padding-left: 0;
+            margin-top: 8px;
+        }
+
+        .main-card li {
+            margin-bottom: 4px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        th, td {
+            padding: 8px 10px;
+            border-bottom: 1px solid rgba(107, 114, 128, 0.6);
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th {
+            font-weight: 600;
+            color: #e5e7eb;
+        }
+
+        a {
+            color: #93c5fd;
+        }
+
+        a:hover {
+            color: #bfdbfe;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-shell">
+        <header class="app-header">
+            <div class="top-row">
+                <div class="brand">Investment Tracker</div>
+                <div class="user-nav">
+                    {% if user.is_authenticated %}
+                        Logged in as {{ user.username }} –
+                        <form action="{% url 'logout' %}" method="post" class="logout-form">
+                            {% csrf_token %}
+                            <button type="submit" class="logout-button">Logout</button>
+                        </form>
+                    {% else %}
+                        <a href="{% url 'login' %}">Login</a> ·
+                        <a href="{% url 'signup' %}">Sign up</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <nav class="main-nav">
+                <a href="{% url 'portfolio-list' %}">Portfolios</a>
+                <a href="{% url 'portfolio-create' %}">New Portfolio</a>
+                <a href="{% url 'investment-create' %}">New Investment</a>
+            </nav>
+        </header>
+
+        <main class="main-card">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</body>
 </html>
