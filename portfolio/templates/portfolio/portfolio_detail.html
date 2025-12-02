@@ -1,107 +1,102 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Investment Tracker Login</title>
-    
-    <style>
-        body {
-            background: linear-gradient(135deg, #6a11cb, #2575fc);
-            font-family: "Segoe UI", Arial, sans-serif;
-            color: #fff;
-        }
-    
-        .portfolio-container {
-            max-width: 900px;
-            margin: 40px auto;
-            padding: 30px 40px;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(12px);
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-    
-        h2 {
-            text-align: center;
-            margin-bottom: 20px;
-            font-weight: 600;
-        }
-    
-        .portfolio-summary {
-            text-align: center;
-            margin-bottom: 25px;
-            font-size: 16px;
-        }
-    
-        .portfolio-summary span {
-            font-weight: 600;
-        }
-    
-        .btn {
-            display: inline-block;
-            padding: 8px 14px;
-            margin: 5px;
-            background: #fff;
-            color: #333;
-            border-radius: 8px;
-            text-decoration: none;
-            transition: 0.3s;
-        }
-    
-        .btn:hover {
-            background: #e6e6e6;
-        }
-    
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-            overflow: hidden;
-        }
-    
-        table th, table td {
-            padding: 12px;
-            text-align: center;
-        }
-    
-        table th {
-            background: rgba(255,255,255,0.1);
-        }
-    
-        table tr:nth-child(even) {
-            background: rgba(255,255,255,0.05);
-        }
-    
-        table tr td a {
-            color: #fff;
-            text-decoration: underline;
-            font-size: 14px;
-        }
-    
-        .gain-positive {
-            color: #00ff7f;
-            font-weight: 600;
-        }
-    
-        .gain-negative {
-            color: #ff4d4d;
-            font-weight: 600;
-        }
-    
-        .links {
-            margin-top: 20px;
-            text-align: center;
-        }
-    
-        .links a {
-            color: #fff;
-            text-decoration: underline;
-            margin: 0 5px;
-        }
-    </style>
+{% extends "portfolio/base.html" %}
+{% block content %}
+<style>
+    body {
+        background: linear-gradient(135deg, #6a11cb, #2575fc);
+        font-family: "Segoe UI", Arial, sans-serif;
+        color: #fff;
+    }
+
+    .portfolio-container {
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 30px 40px;
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(12px);
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    h2 {
+        text-align: center;
+        margin-bottom: 20px;
+        font-weight: 600;
+    }
+
+    .portfolio-summary {
+        text-align: center;
+        margin-bottom: 25px;
+        font-size: 16px;
+    }
+
+    .portfolio-summary span {
+        font-weight: 600;
+    }
+
+    .btn {
+        display: inline-block;
+        padding: 8px 14px;
+        margin: 5px;
+        background: #fff;
+        color: #333;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: 0.3s;
+    }
+
+    .btn:hover {
+        background: #e6e6e6;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    table th, table td {
+        padding: 12px;
+        text-align: center;
+    }
+
+    table th {
+        background: rgba(255,255,255,0.1);
+    }
+
+    table tr:nth-child(even) {
+        background: rgba(255,255,255,0.05);
+    }
+
+    table tr td a {
+        color: #fff;
+        text-decoration: underline;
+        font-size: 14px;
+    }
+
+    .gain-positive {
+        color: #00ff7f;
+        font-weight: 600;
+    }
+
+    .gain-negative {
+        color: #ff4d4d;
+        font-weight: 600;
+    }
+
+    .links {
+        margin-top: 20px;
+        text-align: center;
+    }
+
+    .links a {
+        color: #fff;
+        text-decoration: underline;
+        margin: 0 5px;
+    }
+</style>
 
 <div class="portfolio-container">
     <h2>{{ object.name }}</h2>
