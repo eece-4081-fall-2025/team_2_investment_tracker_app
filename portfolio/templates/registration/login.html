@@ -1,90 +1,12 @@
-/* Center container */
-.auth-container {
-    min-height: 70vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-}
+{% extends "portfolio/base.html" %} 
+{% block content %} 
+<h2>Login</h2> 
+<form method="post"> 
+    {% csrf_token %} 
+    {{ form.as_p }} 
+    <button type="submit">Login</button> 
+</form> 
 
-/* Card styling */
-.auth-card {
-    background: #ffffff;
-    padding: 35px 40px;
-    border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-    max-width: 380px;
-    width: 100%;
-    animation: fadeIn 0.4s ease;
-}
-
-/* Title */
-.auth-title {
-    text-align: center;
-    margin-bottom: 25px;
-    font-size: 26px;
-    color: #333;
-}
-
-/* Form styling */
-.auth-form p {
-    margin-bottom: 18px;
-}
-
-.auth-form input[type="text"],
-.auth-form input[type="email"],
-.auth-form input[type="password"] {
-    width: 100%;
-    padding: 12px 14px;
-    border: 1px solid #d6d6d6;
-    border-radius: 8px;
-    font-size: 15px;
-    transition: 0.2s;
-}
-
-.auth-form input:focus {
-    border-color: #4a77f3;
-    box-shadow: 0 0 0 3px rgba(74, 119, 243, 0.15);
-    outline: none;
-}
-
-/* Submit button */
-.btn-submit {
-    width: 100%;
-    padding: 12px;
-    background: #4a77f3;
-    border: none;
-    border-radius: 8px;
-    color: white;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s ease;
-}
-
-.btn-submit:hover {
-    background: #3a63d3;
-}
-
-/* Footer */
-.auth-footer {
-    text-align: center;
-    margin-top: 20px;
-    color: #777;
-}
-
-.link {
-    color: #4a77f3;
-    font-weight: 600;
-    text-decoration: none;
-}
-
-.link:hover {
-    text-decoration: underline;
-}
-
-/* Fade animation */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
+<p>Don’t have an account? 
+    <a href="{% url 'signup' %}">Sign up</a></p> 
+{% endblock %}
