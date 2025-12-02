@@ -2,124 +2,16 @@
 {% block content %}
 <h2>Portfolios</h2>
 
-<!-- TOTAL NET WORTH (LIVE) -->
-<p>
-  <strong>Total Net Worth (live):</strong>
-  Invested: <span id="tw-invested">calculating…</span> —
-  Current: <span id="tw-current">calculating…</span> —
-  Gain/Loss: <span id="tw-gain">calculating…</span>
-</p>
-
 <ul>
   {% for p in object_list %}
   <li>
     <a href="{{ p.get_absolute_url }}">{{ p.name }}</a>
     — Invested: ${{ p.total_invested_cash|floatformat:2 }}
-    — Current: <span class="portfolio-current" id="port-current-{{ p.id }}">calculating…</span>
-    — Gain/Loss: <span class="portfolio-gain" id="port-gain-{{ p.id }}">calculating…</span>
-
-    <!-- Hidden positions for JS to read -->
-    <div class="positions" data-portfolio="{{ p.id }}" style="display:none">
-      {% for inv in p.investments.all %}
-        {% if inv.ticker %}
-          <span class="pos"
-                data-ticker="{{ inv.ticker|upper }}"
-                data-qty="{{ inv.quantity }}"
-                data-invested="{{ inv.invested_cash }}"></span>
-        {% endif %}
-      {% endfor %}
-    </div>
   </li>
   {% empty %}
   <li>No portfolios yet.</li>
   {% endfor %}
 </ul>
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  const POLL_MS = 5000; // refresh every 5 seconds
-
-  async function fetchPrice(ticker) {
-    if (!ticker) return null;
-    try {
-      const resp = await fetch(`/api/ticker-info/?ticker=${encodeURIComponent(ticker)}`);
-      const data = await resp.json();
-      return (data && data.price !== null) ? parseFloat(data.price) : null;
-    } catch {
-      return null;
-    }
-  }
-
-  function fmt(n) { return `$${Number(n).toFixed(2)}`; }
-  function fmtSigned(n) {
-    const sign = n > 0 ? '+' : '';
-    return `${sign}${fmt(n)}`;
-  }
-
-  // refresh a single portfolio; returns { value, invested }
-  async function refreshPortfolio(container) {
-    const posEls = container.querySelectorAll('.pos');
-    let totalValue = 0;
-    let totalInvested = 0;
-
-    for (const el of posEls) {
-      const ticker = (el.dataset.ticker || '').trim().toUpperCase();
-      const qty = parseFloat(el.dataset.qty || '0') || 0;
-      const invested = parseFloat(el.dataset.invested || '0') || 0;
-
-      totalInvested += invested;
-
-      const price = await fetchPrice(ticker);
-      if (price != null) totalValue += price * qty;
-    }
-
-    const id = container.dataset.portfolio;
-    const currEl = document.getElementById(`port-current-${id}`);
-    const gainEl = document.getElementById(`port-gain-${id}`);
-
-    if (currEl) currEl.textContent = fmt(totalValue);
-
-    const gain = totalValue - totalInvested;
-    if (gainEl) {
-      gainEl.textContent = fmtSigned(gain);
-      gainEl.style.color = gain > 0 ? 'green' : (gain < 0 ? 'red' : 'inherit');
-    }
-
-    return { value: totalValue, invested: totalInvested };
-  }
-
-  async function refreshAll() {
-    const all = document.querySelectorAll('.positions');
-    let aggValue = 0;
-    let aggInvested = 0;
-
-    for (const p of all) {
-      const { value, invested } = await refreshPortfolio(p);
-      aggValue += value;
-      aggInvested += invested;
-    }
-
-    const twInv = document.getElementById('tw-invested');
-    const twCur = document.getElementById('tw-current');
-    const twGain = document.getElementById('tw-gain');
-    const totalGain = aggValue - aggInvested;
-
-    if (twInv) twInv.textContent = fmt(aggInvested);
-    if (twCur) twCur.textContent = fmt(aggValue);
-    if (twGain) {
-      twGain.textContent = fmtSigned(totalGain);
-      twGain.style.color = totalGain > 0 ? 'green' : (totalGain < 0 ? 'red' : 'inherit');
-    }
-  }
-
-  // initial + poll
-  refreshAll();
-  let timer = setInterval(() => {
-    if (document.visibilityState === 'visible') refreshAll();
-  }, POLL_MS);
-
-  window.addEventListener('beforeunload', () => clearInterval(timer));
-});
-</script>
-
+<p><a href="{% url 'portfolio-create' %}">Create New Portfolio</a></p>
 {% endblock %}

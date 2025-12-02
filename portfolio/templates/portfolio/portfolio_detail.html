@@ -9,8 +9,21 @@
   Gain/Loss: <span id="portfolio-gain">calculating…</span>
 </p>
 
+<div style="margin:14px 0 6px; display:flex; justify-content:space-between; align-items:center;">
+  <span style="font-size:14px; color:#9ca3af;">Portfolio price history</span>
+  <div>
+    <button type="button" class="range-btn" data-range="7d">7D</button>
+    <button type="button" class="range-btn" data-range="1mo">1M</button>
+    <button type="button" class="range-btn" data-range="1y">1Y</button>
+    <button type="button" class="range-btn" data-range="5y">5Y</button>
+  </div>
+</div>
+
+<div style="margin:0 0 16px;">
+  <canvas id="portfolioHistoryChart" height="120"></canvas>
+</div>
+
 <p>
-  <a href="{% url 'portfolio-list' %}">Back to all portfolios</a> |
   <a href="{% url 'investment-create' %}?portfolio={{ object.pk }}">Add Investment</a>
 </p>
 
@@ -20,8 +33,8 @@
     <th>Type</th>
     <th>Shares</th>
     <th>Invested</th>
-    <th>Current Value (live)</th>
-    <th>Gain/Loss (live)</th>
+    <th>Current Value</th>
+    <th>Gain/Loss</th>
     <th>Actions</th>
   </tr>
   {% for inv in object.investments.all %}
@@ -38,110 +51,183 @@
     <td>
       <a href="{% url 'investment-edit' inv.pk %}">Edit</a> |
       <a href="{% url 'investment-delete' inv.pk %}">Delete</a> |
-      <a href="{% url 'transaction-create' inv.pk %}">Add Transaction</a>
+      <a href="{% url 'transaction-create' inv.pk %}">Add TX</a>
     </td>
   </tr>
   {% empty %}
-  <tr>
-    <td colspan="7">No investments yet.</td>
-  </tr>
+  <tr><td colspan="7">No investments.</td></tr>
   {% endfor %}
 </table>
 
 <p>
-  <a href="{% url 'portfolio-edit' object.pk %}">Edit Portfolio</a> |
-  <a href="{% url 'portfolio-delete' object.pk %}">Delete Portfolio</a>
+  <a href="{% url 'portfolio-edit' object.pk %}">Edit</a> |
+  <a href="{% url 'portfolio-delete' object.pk %}">Delete</a>
 </p>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  const POLL_MS = 5000; // refresh every 5s
+  const POLL_MS = 5000;
 
-  const rows = Array.from(document.querySelectorAll('.inv-row'));
-  const portfolioCurrentEl = document.getElementById('portfolio-current');
-  const portfolioGainEl = document.getElementById('portfolio-gain');
-
-  function fmt(n) {
-    return `$${Number(n).toFixed(2)}`;
-  }
-
-  function fmtSigned(n) {
-    const sign = n > 0 ? '+' : '';
-    return `${sign}${fmt(n)}`;
-  }
-
+  // ----- live price helpers -----
   async function fetchPrice(ticker) {
-    if (!ticker) return null;
     try {
-      const resp = await fetch(`/api/ticker-info/?ticker=${encodeURIComponent(ticker)}`);
-      const data = await resp.json();
-      if (data && data.price !== null) {
-        return parseFloat(data.price);
-      }
-    } catch (e) {
-      console.error('Error fetching price for', ticker, e);
+      const r = await fetch(`/api/ticker-info/?ticker=${encodeURIComponent(ticker)}`);
+      const d = await r.json();
+      return d.price ? parseFloat(d.price) : null;
+    } catch {
+      return null;
     }
-    return null;
   }
+
+  function fmt(n) { return `$${Number(n).toFixed(2)}`; }
+  function fmtSigned(n) { return (n > 0 ? "+" : "") + fmt(n); }
 
   async function refreshRow(row) {
-    const ticker   = (row.dataset.ticker || '').trim().toUpperCase();
-    const qty      = parseFloat(row.dataset.qty || '0') || 0;
-    const invested = parseFloat(row.dataset.invested || '0') || 0;
+    const ticker   = row.dataset.ticker;
+    const qty      = parseFloat(row.dataset.qty || "0");
+    const invested = parseFloat(row.dataset.invested || "0");
 
-    const valueEl = row.querySelector('.live-value');
-    const gainEl  = row.querySelector('.live-gain');
+    const valEl  = row.querySelector(".live-value");
+    const gainEl = row.querySelector(".live-gain");
 
     if (!ticker || qty <= 0) {
-      valueEl.textContent = 'n/a';
-      gainEl.textContent = 'n/a';
-      return 0;
+      valEl.textContent = "n/a";
+      gainEl.textContent = "n/a";
+      return { value: 0, invested };
     }
 
     const price = await fetchPrice(ticker);
-    if (price === null) {
-      valueEl.textContent = 'n/a';
-      gainEl.textContent = 'n/a';
-      return 0;
+    if (price == null) {
+      valEl.textContent = "n/a";
+      gainEl.textContent = "n/a";
+      return { value: 0, invested };
     }
 
-    const currentValue = price * qty;
-    const gain = currentValue - invested;
+    const value = price * qty;
+    const gain  = value - invested;
 
-    valueEl.textContent = fmt(currentValue);
+    valEl.textContent  = fmt(value);
     gainEl.textContent = fmtSigned(gain);
 
-    return currentValue;
+    return { value, invested };
   }
 
   async function refreshAll() {
+    const rows = document.querySelectorAll(".inv-row");
+    let totalValue = 0;
     let totalInvested = 0;
-    let totalCurrent  = 0;
 
-    for (const row of rows) {
-      const invested = parseFloat(row.dataset.invested || '0') || 0;
-      totalInvested += invested;
-      const current = await refreshRow(row);
-      totalCurrent += current;
+    for (const r of rows) {
+      totalInvested += parseFloat(r.dataset.invested || "0");
+      const res = await refreshRow(r);
+      totalValue += res.value;
     }
 
-    const gain = totalCurrent - totalInvested;
+    const currEl = document.getElementById("portfolio-current");
+    const gainEl = document.getElementById("portfolio-gain");
+    const gain   = totalValue - totalInvested;
 
-    portfolioCurrentEl.textContent = fmt(totalCurrent);
-    portfolioGainEl.textContent = fmtSigned(gain);
+    currEl.textContent = fmt(totalValue);
+    gainEl.textContent = fmtSigned(gain);
+    gainEl.style.color = gain > 0 ? "green" : (gain < 0 ? "red" : "inherit");
   }
 
-  // initial load
-  refreshAll();
+  // ----- history chart -----
+  const canvas = document.getElementById("portfolioHistoryChart");
+  let historyChart = null;
+  let currentRange = "7d";
 
-  // polling (only when tab is visible)
-  let timer = setInterval(() => {
-    if (document.visibilityState === 'visible') {
+  function setActiveRangeButton(rangeKey) {
+    document.querySelectorAll(".range-btn").forEach(btn => {
+      if (btn.dataset.range === rangeKey) {
+        btn.disabled = true;
+      } else {
+        btn.disabled = false;
+      }
+    });
+  }
+
+  async function loadHistory(rangeKey) {
+    if (!canvas) return;
+
+    const url = "{% url 'portfolio-history' object.pk %}" + `?range=${encodeURIComponent(rangeKey)}`;
+    try {
+      const resp = await fetch(url);
+      const payload = await resp.json();
+      const points = payload.points || [];
+      if (!points.length) {
+        if (historyChart) {
+          historyChart.destroy();
+          historyChart = null;
+        }
+        return;
+      }
+
+      const labels = points.map(p => p.date);
+      const values = points.map(p => p.value);
+
+      if (historyChart) {
+        historyChart.destroy();
+      }
+
+      historyChart = new Chart(canvas, {
+        type: "line",
+        data: {
+          labels: labels,
+          datasets: [{
+            data: values,
+            borderWidth: 2,
+            borderColor: "rgba(96,165,250,1)",
+            backgroundColor: "rgba(96,165,250,0.15)",
+            tension: 0      // straight lines, no curves
+          }]
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: {
+            x: {
+              ticks: { color: "#9ca3af", autoSkip: true, maxRotation: 0 },
+              grid: { display: false }
+            },
+            y: {
+              ticks: {
+                color: "#9ca3af",
+                callback: v => "$" + Number(v).toFixed(2)
+              },
+              grid: { color: "rgba(55,65,81,0.5)" }
+            }
+          }
+        }
+      });
+    } catch (e) {
+      console.error("Failed to load history", e);
+    }
+  }
+
+  // ----- init -----
+  refreshAll();
+  setActiveRangeButton(currentRange);
+  loadHistory(currentRange);
+
+  // Poll live prices only
+  setInterval(() => {
+    if (document.visibilityState === "visible") {
       refreshAll();
     }
   }, POLL_MS);
 
-  window.addEventListener('beforeunload', () => clearInterval(timer));
+  // Range button handlers
+  document.querySelectorAll(".range-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const r = btn.dataset.range;
+      if (!r || r === currentRange) return;
+      currentRange = r;
+      setActiveRangeButton(r);
+      loadHistory(r);
+    });
+  });
 });
 </script>
 

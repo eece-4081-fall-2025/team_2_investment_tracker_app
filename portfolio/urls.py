@@ -2,8 +2,9 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('api/ticker-info/', views.ticker_info, name='api-ticker-info'),
-    path('api/tickers/', views.list_tickers, name='api-tickers'),
+    path("api/ticker-info/", views.ticker_info, name="api-ticker-info"),
+    path("api/tickers/", views.list_tickers, name="api-tickers"),
+    path("api/portfolio/<int:pk>/history/", views.portfolio_history, name="portfolio-history"),
     path("", views.PortfolioListView.as_view(), name="portfolio-list"),
     path("portfolio/new/", views.PortfolioCreateView.as_view(), name="portfolio-create"),
     path("portfolio/<int:pk>/", views.PortfolioDetailView.as_view(), name="portfolio-detail"),
@@ -12,6 +13,10 @@ urlpatterns = [
     path("investment/new/", views.InvestmentCreateView.as_view(), name="investment-create"),
     path("investment/<int:pk>/edit/", views.InvestmentUpdateView.as_view(), name="investment-edit"),
     path("investment/<int:pk>/delete/", views.InvestmentDeleteView.as_view(), name="investment-delete"),
-    path("investment/<int:investment_pk>/tx/new/", views.TransactionCreateView.as_view(), name="transaction-create"),
-    path('signup/', views.SignUpView.as_view(), name='signup'),
+    path(
+        "investment/<int:investment_pk>/tx/new/",
+        views.TransactionCreateView.as_view(),
+        name="transaction-create",
+    ),
+    path("signup/", views.SignUpView.as_view(), name="signup"),
 ]
