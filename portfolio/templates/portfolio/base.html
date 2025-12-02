@@ -29,7 +29,7 @@
             margin-left: auto;  
             margin-right: auto;
             position: relative; 
-            z-index: 1; /* see line 17 */
+            z-index: 1; 
             width: 100%;
             max-width: 1100px;
         }
@@ -181,9 +181,9 @@
             </div>
 
             <nav class="main-nav">
-                <a href="{% url 'portfolio-list' %}">Portfolios</a>
-                <a href="{% url 'portfolio-create' %}">New Portfolio</a>
-                <a href="{% url 'investment-create' %}">New Investment</a>
+              {% if request.resolver_match.url_name != 'portfolio-list' %}
+                <a href="{% url 'portfolio-list' %}">🡐 Portfolios</a>
+              {% endif %}
             </nav>
         </header>
 
